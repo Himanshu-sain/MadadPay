@@ -1,42 +1,93 @@
 "use client";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 
-export default function ExchangePage() {
+const fadeUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const ExchangePage = () => {
+  const searchParams = useSearchParams();
+  const partnerName = searchParams.get("partner") || "Partner";
   const [amount, setAmount] = useState("");
-  const [upi, setUpi] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [sessionActive, setSessionActive] = useState(false);
+
+  useEffect(() => {
+    // Auto-start session on mount
+    setSessionActive(true);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white px-4 py-10 flex justify-center items-center">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-xl w-full max-w-md"
-      >
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          💸 Need Instant Cash?
-        </h1>
+    <motion.section
+      className="p-6 max-w-xl mx-auto"
+      initial="hidden"
+      animate="visible"
+      variants={fadeUp}
+      transition={{ duration: 0.5 }}
+    >
+      <h1 className="text-3xl font-semibold mb-6 text-center">
+        Exchange With {partnerName}
+      </h1>
 
-        <div className="space-y-4">
-          <input
-            type="number"
-            placeholder="Enter Amount (₹)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <form className="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+        <div>
+          <label className="block mb-1 font-medium">Matched With</label>
           <input
             type="text"
-            placeholder="Enter your UPI ID"
-            value={upi}
-            onChange={(e) => setUpi(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={partnerName}
+            readOnly
+            className="w-full border p-2 rounded bg-gray-100 cursor-not-allowed"
           />
-          <button className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-semibold py-3 rounded-xl hover:scale-105 transition">
-            🔍 Find a Match
-          </button>
         </div>
-      </motion.div>
-    </div>
+
+        <div>
+          <label className="block mb-1 font-medium">Enter Amount</label>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="e.g. 500"
+            className="w-full border p-2 rounded"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium">Payment Method</label>
+          <select
+            className="w-full border p-2 rounded"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option>Cash</option>
+            <option>UPI</option>
+            <option>Bank Transfer</option>
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-red-600 text-white py-3 rounded hover:bg-red-700 transition"
+          onClick={(e) => {
+            e.preventDefault();
+            alert(
+              `Request sent to ${partnerName} for ₹${amount} via ${paymentMethod}`
+            );
+          }}
+        >
+          Confirm Exchange
+        </button>
+      </form>
+
+      {sessionActive && (
+        <div className="mt-6 text-center text-green-600 font-semibold">
+          ✅ Exchange session active
+        </div>
+      )}
+    </motion.section>
   );
-}
+};
+
+export default ExchangePage;

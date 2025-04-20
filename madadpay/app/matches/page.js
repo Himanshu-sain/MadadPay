@@ -1,51 +1,90 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import toast from "react-hot-toast";
+import socket from "../../lib/socket"; // make sure this points to socket client
+import { v4 as uuid } from "uuid"; // for demo userId generation
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0 },
+};
 
 export default function MatchesPage() {
-  const [users, setUsers] = useState([]);
+  const router = useRouter();
+  const [matchesList, setMatchesList] = useState([]);
+  const [criteria, setCriteria] = useState({
+    available: true,
+    cashRequired: true,
+  });
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const res = await fetch("/api/matches");
-      const data = await res.json();
-      setUsers(data);
+    const userId = uuid(); // For demo. Use real user ID in prod
+
+    // Register the user
+    socket.emit("register", {
+      userId,
+      name: "User " + userId.slice(0, 4),
+      location: "XYZ",
+      available: true,
+    });
+
+    // Request to find a match
+    socket.emit("find_match", criteria);
+
+    // On receiving a match
+    socket.on("match_found", ({ match }) => {
+      toast.success(`🎯 Match found with ${match.name}`);
+      setTimeout(() => {
+        router.push(`/exchange?partner=${match.name}`);
+      }, 2000); // wait before redirect
+    });
+
+    return () => {
+      socket.off("match_found");
     };
-    fetchUsers();
-  }, []);
+  }, [criteria, router]);
+
+  // Fake matches list
+  const mockList = [
+    { name: "Ankit S.", distance: "300m away", status: "Available now" },
+    { name: "Meena K.", distance: "500m away", status: "Available in 5 min" },
+    { name: "Rahul J.", distance: "750m away", status: "Busy" },
+  ];
 
   return (
-    <div className="min-h-screen px-6 py-10 bg-gray-50">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Nearby Matches</h1>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {users.map((user, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-2xl p-5 shadow hover:shadow-lg transition"
+    <motion.section
+      className="p-6 max-w-4xl mx-auto"
+      initial="hidden"
+      animate="visible"
+      variants={fadeUp}
+      transition={{ duration: 0.5 }}
+    >
+      <h1 className="text-3xl font-semibold mb-6">Nearby Matches</h1>
+      <ul className="space-y-4">
+        {mockList.map((match, i) => (
+          <motion.li
+            key={i}
+            className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 flex items-center justify-between hover:shadow-xl transition"
+            whileHover={{ scale: 1.03 }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {user.name}
-              </h2>
-              {user.verified && (
-                <span className="text-green-600 text-sm font-medium bg-green-100 px-2 py-0.5 rounded-full">
-                  ✔ Verified
-                </span>
-              )}
+            <div>
+              <h2 className="text-lg font-bold">{match.name}</h2>
+              <p className="text-sm text-gray-500">{match.distance}</p>
             </div>
-            <p className="text-gray-600 mb-1">
-              Distance: <strong>{user.distance}</strong>
-            </p>
-            <p className="text-gray-600 mb-1">
-              Cash Available: <strong>₹{user.cash}</strong>
-            </p>
-            <p className="text-yellow-500 mb-3">⭐ {user.rating}</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg w-full">
-              Request Exchange
-            </button>
-          </div>
+            <span
+              className={`text-sm font-medium ${
+                match.status.includes("Available")
+                  ? "text-green-600"
+                  : "text-yellow-500"
+              }`}
+            >
+              {match.status}
+            </span>
+          </motion.li>
         ))}
-      </div>
-    </div>
+      </ul>
+    </motion.section>
   );
 }

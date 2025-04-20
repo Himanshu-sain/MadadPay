@@ -1,305 +1,562 @@
-// "use client";
+//  "use client"
+// import React, { useState, useEffect } from "react";
 
-// import { useState } from "react";
-// import { motion } from "framer-motion";
-// import Link from "next/link";
+// const HomePage = () => {
+//   const [location, setLocation] = useState(null);
+//   const [locationStatus, setLocationStatus] = useState("idle"); // idle, loading, success, error
+//   const [displayLocation, setDisplayLocation] = useState("");
+//   const [accuracy, setAccuracy] = useState(null);
+//   const [lastUpdated, setLastUpdated] = useState(null);
 
-// export default function Home() {
-//   const [darkMode, setDarkMode] = useState(false);
+//   // Other existing code (steps array, etc.) remains the same...
+//   const steps = [
+//     {
+//       title: "Find Nearby Users",
+//       description:
+//         "Quickly locate people around you who want to exchange cash.",
+//       icon: "📍",
+//     },
+//     {
+//       title: "Start a Chat",
+//       description:
+//         "Message instantly within the app to coordinate the exchange.",
+//       icon: "💬",
+//     },
+//     {
+//       title: "Complete Transaction",
+//       description: "Meet up, exchange cash, and rate each other for safety.",
+//       icon: "✅",
+//     },
+//   ];
 
-//   return (
-//     <div
-//       className={darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-900"}
-//     >
-//       {/* Navbar */}
-//       <header className="flex justify-between items-center px-8 py-4 shadow-md">
-//         <div className="flex items-center space-x-2">
-//           <span className="text-xl font-bold bg-blue-600 text-white px-3 py-1 rounded-lg">
-//             MadadPay
-//           </span>
-//         </div>
-//         <nav className="space-x-6 text-sm font-medium">
-//           <Link href="/matches" className="hover:text-cyan-600">
-//             Matches
-//           </Link>
-//           <Link href="/exchange" className="hover:text-cyan-600">
-//             Exchange
-//           </Link>
-//           <Link href="/confirm" className="hover:text-cyan-600">
-//             Confirm
-//           </Link>
-//           <Link href="/login" className="hover:text-cyan-600">
-//             Log in
-//           </Link>
-//           <Link href="/signup" className="hover:text-cyan-600">
-//             Sign up
-//           </Link>
-//           <button
-//             onClick={() => setDarkMode(!darkMode)}
-//             className="ml-4 px-2 py-1 border rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-//           >
-//             {darkMode ? "☀️" : "🌙"}
-//           </button>
-//         </nav>
-//       </header>
+//   const getLocation = () => {
+//     setLocationStatus("loading");
+    
+//     if (!navigator.geolocation) {
+//       setLocationStatus("error");
+//       return;
+//     }
+    
+//     const options = {
+//       enableHighAccuracy: true,
+//       timeout: 10000, // 10 seconds
+//       maximumAge: 0 // Don't use cached position
+//     };
 
-//       {/* Hero Section */}
-//       <section className="relative px-8 py-20 overflow-hidden">
-//         <motion.div
-//           initial={{ opacity: 0, y: 50 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           transition={{ duration: 0.8 }}
-//           className="max-w-4xl mx-auto text-center"
+//     navigator.geolocation.getCurrentPosition(
+//       async (position) => {
+//         try {
+//           const { latitude, longitude, accuracy } = position.coords;
+//           setAccuracy(Math.round(accuracy));
+//           setLastUpdated(new Date().toLocaleTimeString());
+
+//           // First update with coordinates immediately
+//           setLocation({ latitude, longitude });
+//           setDisplayLocation("Getting address...");
+          
+//           // Try to get human-readable address
+//           try {
+//             const response = await fetch(
+//               `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+//             );
+            
+//             if (response.ok) {
+//               const data = await response.json();
+//               const address = data.address;
+              
+//               // Build display address from available components
+//               let displayParts = [];
+//               if (address.road) displayParts.push(address.road);
+//               if (address.suburb) displayParts.push(address.suburb);
+//               if (address.city_district) displayParts.push(address.city_district);
+//               if (address.city) displayParts.push(address.city);
+              
+//               const displayText = displayParts.length > 0 
+//                 ? displayParts.join(", ")
+//                 : "Nearby location";
+              
+//               setLocation({ 
+//                 latitude, 
+//                 longitude,
+//                 address: {
+//                   road: address.road,
+//                   suburb: address.suburb,
+//                   city: address.city,
+//                   state: address.state,
+//                   postcode: address.postcode,
+//                   country: address.country
+//                 }
+//               });
+//               setDisplayLocation(displayText);
+//             } else {
+//               // Fallback to coordinates if address fetch fails
+//               setDisplayLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+//             }
+//           } catch (error) {
+//             console.error("Address lookup failed:", error);
+//             setDisplayLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+//           }
+          
+//           setLocationStatus("success");
+//         } catch (error) {
+//           console.error("Error processing location:", error);
+//           setLocationStatus("error");
+//         }
+//       },
+//       (error) => {
+//         console.error("Error getting location:", error);
+//         let errorMessage = "Location access denied";
+        
+//         switch(error.code) {
+//           case error.PERMISSION_DENIED:
+//             errorMessage = "Location permission denied. Please enable it in browser settings.";
+//             break;
+//           case error.POSITION_UNAVAILABLE:
+//             errorMessage = "Location information unavailable.";
+//             break;
+//           case error.TIMEOUT:
+//             errorMessage = "Location request timed out. Please try again.";
+//             break;
+//           default:
+//             errorMessage = "An unknown error occurred.";
+//         }
+        
+//         setLocationStatus("error");
+//         setDisplayLocation(errorMessage);
+//       },
+//       options
+//     );
+//   };
+
+//   // Get location when component mounts (with user permission)
+//   useEffect(() => {
+//     const checkLocationPermission = async () => {
+//       try {
+//         // Check if we already have permission
+//         const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+        
+//         if (permissionStatus.state === 'granted') {
+//           getLocation();
+//         } else if (permissionStatus.state === 'prompt') {
+//           // We'll wait for user to click the button
+//         }
+        
+//         permissionStatus.onchange = () => {
+//           if (permissionStatus.state === 'granted') {
+//             getLocation();
+//           }
+//         };
+//       } catch (error) {
+//         console.log("Permission API not supported, will wait for user click");
+//       }
+//     };
+    
+//     checkLocationPermission();
+//   }, []);
+
+//   // Updated Location Feature JSX
+//   const renderLocationFeature = () => (
+//     <div className="mb-8 flex flex-col items-center">
+//       <div className="bg-black/40 backdrop-blur-sm p-6 rounded-xl border border-gray-700 shadow-lg max-w-md w-full">
+//         <h3 className="text-xl font-medium mb-4 flex items-center justify-center">
+//           <span className="mr-2 text-2xl">📍</span>
+//           Find Users Near You
+//         </h3>
+        
+//         {locationStatus === "success" && (
+//           <div className="mb-4 py-3 px-4 bg-green-900/30 rounded-lg border border-green-800">
+//             <p className="text-green-400 font-medium text-lg">{displayLocation}</p>
+//             <div className="flex justify-between text-green-300 text-sm mt-1">
+//               <span>Accuracy: ~{accuracy} meters</span>
+//               <span>Updated: {lastUpdated}</span>
+//             </div>
+//           </div>
+//         )}
+        
+//         {locationStatus === "error" && (
+//           <div className="mb-4 py-3 px-4 bg-red-900/30 rounded-lg border border-red-800">
+//             <p className="text-red-400">{displayLocation || "Location error"}</p>
+//             <p className="text-red-300 text-sm mt-1">
+//               {displayLocation.includes("permission") 
+//                 ? "Please check your browser settings"
+//                 : "Please try again later"}
+//             </p>
+//           </div>
+//         )}
+        
+//         {locationStatus === "loading" && (
+//           <div className="mb-4 flex justify-center items-center py-3">
+//             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+//             <span className="ml-2 text-blue-400">Locating you...</span>
+//           </div>
+//         )}
+        
+//         <button 
+//           onClick={getLocation}
+//           disabled={locationStatus === "loading"}
+//           className={`w-full mt-2 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center
+//             ${locationStatus === "loading" 
+//               ? "bg-gray-700 text-gray-300 cursor-not-allowed" 
+//               : locationStatus === "success"
+//                 ? "bg-green-700 hover:bg-green-600 text-white"
+//                 : "bg-blue-600 hover:bg-blue-500 text-white"
+//             }`}
 //         >
-//           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-//             Get Cash with UPI Nearby
-//           </h1>
-//           <p className="text-lg md:text-xl mb-8">
-//             Exchange UPI balance with cash instantly and securely near you.
+//           {locationStatus === "success" 
+//             ? "Refresh Location" 
+//             : locationStatus === "loading"
+//               ? "Getting Location..." 
+//               : "Share My Location"}
+//           {locationStatus !== "loading" && (
+//             <span className="ml-2 text-xl">📍</span>
+//           )}
+//         </button>
+        
+//         {locationStatus === "success" && (
+//           <p className="text-xs text-gray-400 mt-2 text-center">
+//             Your location is only used to find nearby exchanges and is not stored permanently.
 //           </p>
-//           <div className="flex justify-center space-x-4">
-//             <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold">
-//               Need Cash
-//             </button>
-//             <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold">
-//               How It Works
-//             </button>
-//           </div>
-//         </motion.div>
-
-//         {/* Floating Cards */}
-//         <motion.div
-//           className="absolute top-10 left-0 w-32 h-32 bg-blue-500 opacity-20 rounded-3xl rotate-12 blur-2xl"
-//           animate={{ y: [0, 20, 0] }}
-//           transition={{ repeat: Infinity, duration: 4 }}
-//         />
-//         <motion.div
-//           className="absolute bottom-10 right-0 w-40 h-40 bg-cyan-500 opacity-20 rounded-full rotate-45 blur-2xl"
-//           animate={{ y: [0, -20, 0] }}
-//           transition={{ repeat: Infinity, duration: 5 }}
-//         />
-//       </section>
-
-//       {/* How It Works */}
-//       <motion.section
-//         className="px-8 py-16"
-//         initial={{ opacity: 0, y: 40 }}
-//         whileInView={{ opacity: 1, y: 0 }}
-//         viewport={{ once: true }}
-//         transition={{ duration: 0.7 }}
-//       >
-//         <h2 className="text-3xl font-bold text-center mb-6">How It Works</h2>
-//         <ol className="list-decimal list-inside text-lg space-y-2 max-w-xl mx-auto">
-//           <li>Enter your UPI or cash need</li>
-//           <li>Get matched with someone nearby</li>
-//           <li>Meet and complete the exchange</li>
-//         </ol>
-//       </motion.section>
+//         )}
+//       </div>
 //     </div>
 //   );
-// }
+
+//   // In your return statement, replace the old location feature with:
+//   // {renderLocationFeature()}
+  
+//   // Rest of your component remains the same...
+
+//    <section className="py-20 px-6 bg-gray-100">
+//      <h2 className="text-4xl font-semibold text-center mb-12">
+//        Customer Testimonials
+//      </h2>
+//      <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+//        <div>
+//          <p className="italic mb-2">
+//            MadadPay helped me get cash when ATMs were down! Highly recommended.
+//          </p>
+//          <p className="font-medium">- Priya S., Delhi</p>
+//        </div>
+//        <div>
+//          <p className="italic mb-2">
+//            Smooth experience, connected to someone nearby in seconds.
+//          </p>
+//          <p className="font-medium">- Ravi M., Mumbai</p>
+//        </div>
+//      </div>
+//    </section>;
+
+   
+//      /* CTA Section */
+   
+//    <section className="bg-black text-white py-24 px-6 text-center">
+//      <h2 className="text-4xl font-bold mb-4">Join the MadadPay Community</h2>
+//      <p className="mb-6 max-w-xl mx-auto">
+//        Start exchanging cash with trusted users in your area.
+//      </p>
+//      <button className="bg-red-600 hover:bg-red-700 px-8 py-4 rounded-full text-white font-semibold transition duration-300">
+//        Sign Up Now
+//      </button>
+//    </section>;
+// };
+
+// export default HomePage;
 
 
-// "use client";
+"use client"
+import React, { useState, useEffect } from "react";
 
-// import { motion } from "framer-motion";
-// import Link from "next/link";
+const HomePage = () => {
+  const [location, setLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("idle");
+  const [displayLocation, setDisplayLocation] = useState("");
+  const [accuracy, setAccuracy] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-// export default function Home() {
-//   return (
-//     <div className="bg-white text-gray-900">
-//       {/* Navbar */}
-//       <header className="flex justify-between items-center px-8 py-4 shadow-md">
-//         <div className="flex items-center space-x-2">
-//           <span className="text-xl font-bold bg-blue-600 text-white px-3 py-1 rounded-lg shadow">
-//             MadadPay
-//           </span>
-//         </div>
-//         <nav className="space-x-6 text-sm font-medium">
-//           <Link href="/matches" className="hover:text-blue-600 transition">
-//             Matches
-//           </Link>
-//           <Link href="/exchange" className="hover:text-blue-600 transition">
-//             Exchange
-//           </Link>
-//           <Link href="/confirm" className="hover:text-blue-600 transition">
-//             Confirm
-//           </Link>
-//           <Link href="/login" className="hover:text-blue-600 transition">
-//             Log in
-//           </Link>
-//           <Link href="/signup" className="hover:text-blue-600 transition">
-//             Sign up
-//           </Link>
-//         </nav>
-//       </header>
+  const steps = [
+    {
+      title: "Find Nearby Users",
+      description: "Quickly locate people around you who want to exchange cash.",
+      icon: "📍",
+    },
+    {
+      title: "Start a Chat",
+      description: "Message instantly within the app to coordinate the exchange.",
+      icon: "💬",
+    },
+    {
+      title: "Complete Transaction",
+      description: "Meet up, exchange cash, and rate each other for safety.",
+      icon: "✅",
+    },
+  ];
 
-//       {/* Hero Section */}
-//       <section className="relative px-8 py-20 overflow-hidden">
-//         <motion.div
-//           initial={{ opacity: 0, y: 50 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           transition={{ duration: 0.8 }}
-//           className="max-w-4xl mx-auto text-center"
-//         >
-//           <motion.h1
-//             className="text-4xl md:text-5xl font-extrabold mb-4 text-blue-700"
-//             initial={{ opacity: 0, y: 30 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             transition={{ duration: 0.6 }}
-//           >
-//             Get Cash with UPI Nearby 💸
-//           </motion.h1>
-//           <motion.p
-//             className="text-lg md:text-xl mb-8 text-gray-700"
-//             initial={{ opacity: 0, y: 20 }}
-//             animate={{ opacity: 1, y: 0 }}
-//             transition={{ delay: 0.2, duration: 0.6 }}
-//           >
-//             Exchange UPI balance for cash instantly and securely with people
-//             around you.
-//           </motion.p>
-//           <div className="flex justify-center space-x-4">
-//             <motion.button
-//               whileHover={{ scale: 1.05 }}
-//               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md"
-//             >
-//               Need Cash
-//             </motion.button>
-//             <motion.button
-//               whileHover={{ scale: 1.05 }}
-//               className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg font-semibold transition"
-//             >
-//               How It Works
-//             </motion.button>
-//           </div>
-//         </motion.div>
+  
+  const getLocation = () => {
+    setLocationStatus("loading");
+    
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      return;
+    }
+    
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 10000, // 10 seconds
+      maximumAge: 0 // Don't use cached position
+    };
 
-//         {/* Floating Blobs */}
-//         <motion.div
-//           className="absolute top-10 left-0 w-32 h-32 bg-blue-500 opacity-20 rounded-3xl rotate-12 blur-2xl"
-//           animate={{ y: [0, 20, 0] }}
-//           transition={{ repeat: Infinity, duration: 4 }}
-//         />
-//         <motion.div
-//           className="absolute bottom-10 right-0 w-40 h-40 bg-cyan-500 opacity-20 rounded-full rotate-45 blur-2xl"
-//           animate={{ y: [0, -20, 0] }}
-//           transition={{ repeat: Infinity, duration: 5 }}
-//         />
-//       </section>
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude, accuracy } = position.coords;
+          setAccuracy(Math.round(accuracy));
+          setLastUpdated(new Date().toLocaleTimeString());
 
-//       {/* How It Works */}
-//       <motion.section
-//         className="px-8 py-16 bg-gray-50"
-//         initial={{ opacity: 0, y: 40 }}
-//         whileInView={{ opacity: 1, y: 0 }}
-//         viewport={{ once: true }}
-//         transition={{ duration: 0.7 }}
-//       >
-//         <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-//           How It Works
-//         </h2>
-//         <ol className="list-decimal list-inside text-lg space-y-2 max-w-xl mx-auto text-gray-700">
-//           <li>Enter your UPI or cash need</li>
-//           <li>Get matched with someone nearby</li>
-//           <li>Meet and complete the exchange</li>
-//         </ol>
-//       </motion.section>
+          // First update with coordinates immediately
+          setLocation({ latitude, longitude });
+          setDisplayLocation("Getting address...");
+          
+          // Try to get human-readable address
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              const address = data.address;
+              
+              // Build display address from available components
+              let displayParts = [];
+              if (address.road) displayParts.push(address.road);
+              if (address.suburb) displayParts.push(address.suburb);
+              if (address.city_district) displayParts.push(address.city_district);
+              if (address.city) displayParts.push(address.city);
+              
+              const displayText = displayParts.length > 0 
+                ? displayParts.join(", ")
+                : "Nearby location";
+              
+              setLocation({ 
+                latitude, 
+                longitude,
+                address: {
+                  road: address.road,
+                  suburb: address.suburb,
+                  city: address.city,
+                  state: address.state,
+                  postcode: address.postcode,
+                  country: address.country
+                }
+              });
+              setDisplayLocation(displayText);
+            } else {
+              // Fallback to coordinates if address fetch fails
+              setDisplayLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            }
+          } catch (error) {
+            console.error("Address lookup failed:", error);
+            setDisplayLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+          }
+          
+          setLocationStatus("success");
+        } catch (error) {
+          console.error("Error processing location:", error);
+          setLocationStatus("error");
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        let errorMessage = "Location access denied";
+        
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Location permission denied. Please enable it in browser settings.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out. Please try again.";
+            break;
+          default:
+            errorMessage = "An unknown error occurred.";
+        }
+        
+        setLocationStatus("error");
+        setDisplayLocation(errorMessage);
+      },
+      options
+    );
+  };
 
-//       {/* Footer */}
-//       <footer className="bg-blue-50 text-gray-800 py-8 px-8 border-t">
-//         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center">
-//           <div className="mb-4 md:mb-0 text-center md:text-left">
-//             <h3 className="text-xl font-bold mb-1">MadadPay</h3>
-//             <p className="text-sm">Empowering local UPI cash exchanges 💡</p>
-//           </div>
-//           <div className="flex space-x-6">
-//             <Link href="/privacy" className="hover:underline text-sm">
-//               Privacy Policy
-//             </Link>
-//             <Link href="/terms" className="hover:underline text-sm">
-//               Terms of Use
-//             </Link>
-//             <Link href="/contact" className="hover:underline text-sm">
-//               Contact Us
-//             </Link>
-//           </div>
-//         </div>
-//         <div className="text-center text-xs text-gray-500 mt-4">
-//           &copy; {new Date().getFullYear()} MadadPay. All rights reserved.
-//         </div>
-//       </footer>
-//     </div>
-//   );
-// }
+  // Get location when component mounts (with user permission)
+  useEffect(() => {
+    const checkLocationPermission = async () => {
+      try {
+        // Check if we already have permission
+        const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+        
+        if (permissionStatus.state === 'granted') {
+          getLocation();
+        } else if (permissionStatus.state === 'prompt') {
+          // We'll wait for user to click the button
+        }
+        
+        permissionStatus.onchange = () => {
+          if (permissionStatus.state === 'granted') {
+            getLocation();
+          }
+        };
+      } catch (error) {
+        console.log("Permission API not supported, will wait for user click");
+      }
+    };
+    
+    checkLocationPermission();
+  }, []);
 
-"use client";
-
-import { motion } from "framer-motion";
-
-export default function Home() {
-  return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-[#f5f7fa] via-[#dbeafe] to-[#e0f2fe] text-gray-800 min-h-screen">
-      {/* 👻 Grain Effect Overlay */}
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[url('/grain.png')] opacity-[0.04] mix-blend-soft-light" />
-
-      {/* 🎨 Background Gradient Blobs */}
-      <div className="absolute -top-32 -left-40 w-[500px] h-[500px] bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-full blur-[160px] opacity-40 -z-10" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-gradient-to-r from-cyan-400 to-sky-300 rounded-full blur-[140px] opacity-30 -z-10" />
-
-      {/* 🌟 Hero Section */}
-      <section className="relative z-10 px-6 md:px-12 py-24 text-center">
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight text-gray-900 drop-shadow"
+  // Updated Location Feature JSX
+  const renderLocationFeature = () => (
+    <div className="mb-8 flex flex-col items-center">
+      <div className="bg-black/40 backdrop-blur-sm p-6 rounded-xl border border-gray-700 shadow-lg max-w-md w-full">
+        <h3 className="text-xl font-medium mb-4 flex items-center justify-center">
+          <span className="mr-2 text-2xl">📍</span>
+          Find Users Near You
+        </h3>
+        
+        {locationStatus === "success" && (
+          <div className="mb-4 py-3 px-4 bg-green-900/30 rounded-lg border border-green-800">
+            <p className="text-green-400 font-medium text-lg">{displayLocation}</p>
+            <div className="flex justify-between text-green-300 text-sm mt-1">
+              <span>Accuracy: ~{accuracy} meters</span>
+              <span>Updated: {lastUpdated}</span>
+            </div>
+          </div>
+        )}
+        
+        {locationStatus === "error" && (
+          <div className="mb-4 py-3 px-4 bg-red-900/30 rounded-lg border border-red-800">
+            <p className="text-red-400">{displayLocation || "Location error"}</p>
+            <p className="text-red-300 text-sm mt-1">
+              {displayLocation.includes("permission") 
+                ? "Please check your browser settings"
+                : "Please try again later"}
+            </p>
+          </div>
+        )}
+        
+        {locationStatus === "loading" && (
+          <div className="mb-4 flex justify-center items-center py-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+            <span className="ml-2 text-blue-400">Locating you...</span>
+          </div>
+        )}
+        
+        <button 
+          onClick={getLocation}
+          disabled={locationStatus === "loading"}
+          className={`w-full mt-2 py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center
+            ${locationStatus === "loading" 
+              ? "bg-gray-700 text-gray-300 cursor-not-allowed" 
+              : locationStatus === "success"
+                ? "bg-green-700 hover:bg-green-600 text-white"
+                : "bg-blue-600 hover:bg-blue-500 text-white"
+            }`}
         >
-          💸 Instant UPI to Cash Near You
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="mt-6 text-lg md:text-xl text-gray-600 max-w-2xl mx-auto"
-        >
-          MadadPay connects you with people nearby to securely exchange UPI
-          balance for real cash – anytime, anywhere.
-        </motion.p>
-
-        <motion.div
-          className="mt-10 flex justify-center gap-4 flex-wrap"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <button className="bg-white/70 backdrop-blur-md hover:bg-white text-blue-700 font-semibold px-6 py-3 rounded-xl shadow-lg border border-blue-200 transition-all duration-300">
-            🚀 Need Cash
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md transition-all duration-300">
-            🔍 How It Works
-          </button>
-        </motion.div>
-      </section>
-
-      {/* 📘 How It Works Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-        className="bg-white/60 backdrop-blur-md border-t border-blue-100 py-16 px-8 rounded-t-3xl z-10 relative"
-      >
-        <h2 className="text-3xl font-bold text-center mb-6 text-blue-800">
-          📲 How MadadPay Works
-        </h2>
-        <div className="max-w-2xl mx-auto text-lg text-gray-700 space-y-4">
-          <p>1️⃣ Enter your UPI ID and amount.</p>
-          <p>2️⃣ Get matched with verified people nearby.</p>
-          <p>3️⃣ Meet & complete the exchange with safety tips.</p>
-        </div>
-      </motion.section>
+          {locationStatus === "success" 
+            ? "Refresh Location" 
+            : locationStatus === "loading"
+              ? "Getting Location..." 
+              : "Share My Location"}
+          {locationStatus !== "loading" && (
+            <span className="ml-2 text-xl">📍</span>
+          )}
+        </button>
+        
+        {locationStatus === "success" && (
+          <p className="text-xs text-gray-400 mt-2 text-center">
+            Your location is only used to find nearby exchanges and is not stored permanently.
+          </p>
+        )}
+      </div>
     </div>
   );
-}
+  // ... (keep all your existing functions: getLocation, renderLocationFeature, etc.)
+  // ... (keep your useEffect hook)
+
+  return (
+    <main className="bg-white text-gray-900">
+      {/* Hero Section */}
+      <section className="bg-black text-white py-24 px-6 text-center relative overflow-hidden">
+        <div className="max-w-4xl mx-auto z-10 relative">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+            Instant Cash Exchange, Anywhere
+          </h1>
+          <p className="text-lg md:text-xl mb-8 text-gray-300">
+            Meet people nearby and trade cash quickly & securely with MadadPay.
+          </p>
+          
+          {renderLocationFeature()}
+          
+          <button className="bg-red-600 hover:bg-red-700 px-8 py-4 rounded-full text-white font-semibold transition duration-300 mt-8">
+            Get Started
+          </button>
+        </div>
+        <div className="absolute top-1/2 left-1/2 w-[60rem] h-[60rem] -translate-x-1/2 -translate-y-1/2 bg-red-700 opacity-20 rounded-full blur-3xl z-0" />
+      </section>
+
+      {/* Steps Section */}
+      <section className="py-24 px-6 bg-gray-50 text-center">
+        <h2 className="text-4xl font-semibold mb-14">How It Works</h2>
+        <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+          {steps.map((step, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl shadow-md p-8 transition hover:scale-105 hover:shadow-lg"
+            >
+              <div className="text-4xl mb-4">{step.icon}</div>
+              <h3 className="text-xl font-bold mb-2">{step.title}</h3>
+              <p className="text-gray-600 text-sm">{step.description}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 px-6 bg-gray-100">
+        <h2 className="text-4xl font-semibold text-center mb-12">
+          Customer Testimonials
+        </h2>
+        <div className="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+          <div>
+            <p className="italic mb-2">
+              MadadPay helped me get cash when ATMs were down! Highly recommended.
+            </p>
+            <p className="font-medium">- Priya S., Delhi</p>
+          </div>
+          <div>
+            <p className="italic mb-2">
+              Smooth experience, connected to someone nearby in seconds.
+            </p>
+            <p className="font-medium">- Ravi M., Mumbai</p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-black text-white py-24 px-6 text-center">
+        <h2 className="text-4xl font-bold mb-4">Join the MadadPay Community</h2>
+        <p className="mb-6 max-w-xl mx-auto">
+          Start exchanging cash with trusted users in your area.
+        </p>
+        <button className="bg-red-600 hover:bg-red-700 px-8 py-4 rounded-full text-white font-semibold transition duration-300">
+          Sign Up Now
+        </button>
+      </section>
+    </main>
+  );
+};
+
+export default HomePage;
