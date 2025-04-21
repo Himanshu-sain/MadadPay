@@ -6,7 +6,7 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const { name, email, phone, password, passwordConfirm } = await req.json();
+    const { name, email, phone, password, passwordConfirm, location } = await req.json();
 
     // 1) Check if passwords match
     if (password !== passwordConfirm) {
@@ -37,6 +37,7 @@ export async function POST(req) {
       email,
       phone,
       password,
+      location,
       isActive: true,
     });
 

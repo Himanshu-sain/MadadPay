@@ -1,9 +1,11 @@
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
+import User from "@/models/User";
+
 
 // Generate JWT Token
-const signToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+const signToken = (_id) => {
+  return jwt.sign({ _id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
@@ -44,10 +46,12 @@ export const protect = async (req) => {
     // 1) Get token and check if it exists
     let token;
     const authHeader = req.headers.get("authorization");
+    console.log("Auth header:", authHeader);
 
     if (authHeader && authHeader.startsWith("Bearer")) {
       token = authHeader.split(" ")[1];
     }
+    console.log("Token from header:", token); 
 
     if (!token) {
       return new NextResponse(
@@ -61,9 +65,11 @@ export const protect = async (req) => {
 
     // 2) Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded token:", decoded);
 
     // 3) Check if user still exists
     const currentUser = await User.findById(decoded.id);
+    
     if (!currentUser) {
       return new NextResponse(
         JSON.stringify({

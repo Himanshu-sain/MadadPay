@@ -81,7 +81,7 @@ const userSchema = new mongoose.Schema(
           message: (props) => `${props.value} is not a valid coordinate pair!`,
         },
       },
-      index: "2dsphere", // Geospatial index
+       // Geospatial index
     },
     lastKnownLocation: {
       type: {
