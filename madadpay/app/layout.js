@@ -29,6 +29,7 @@ export default function RootLayout({ children }) {
         <ToasterProvider />
         <AuthProvider>
           <Navbar />
+          <div className="h-16" />
           {children}
           <Footer />
         </AuthProvider>

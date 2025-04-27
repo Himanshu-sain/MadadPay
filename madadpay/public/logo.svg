@@ -1,0 +1,22 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#f0f9ff" stroke="#2563eb" stroke-width="4"/>
+  
+  <!-- Inner Circle -->
+  <circle cx="100" cy="100" r="75" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
+  
+  <!-- Cash/Digital Loop Arrows -->
+  <path d="M100,45 C130,45 155,70 155,100 C155,115 148,128 137,138" 
+        fill="none" stroke="#2563eb" stroke-width="8" stroke-linecap="round"/>
+  
+  <path d="M63,138 C52,128 45,115 45,100 C45,70 70,45 100,45" 
+        fill="none" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Arrow Tips -->
+  <polygon points="137,138 127,128 147,128" fill="#2563eb"/>
+  <polygon points="63,138 73,128 53,128" fill="#10b981"/>
+  
+  <!-- Dollar Symbol -->
+  <path d="M100,75 L100,125 M90,85 L110,85 M90,115 L110,115" 
+        stroke="#334155" stroke-width="8" stroke-linecap="round"/>
+</svg>

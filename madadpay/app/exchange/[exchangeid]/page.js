@@ -169,9 +169,11 @@ export default function ExchangePage() {
                     {exchange.partner.completedExchanges} exchanges
                   </span>
                 </div>
-                <button className="mt-3 px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50">
-                  <i className="fas fa-comment-alt mr-1"></i> Message
-                </button>
+                <Link href={`/messages/`}>
+                  <button className="mt-3 px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50">
+                    <i className="fas fa-comment-alt mr-1"></i> Message
+                  </button>
+                </Link>
               </div>
             </div>
           </div>
