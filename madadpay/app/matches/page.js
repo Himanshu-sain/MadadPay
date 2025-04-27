@@ -3,9 +3,10 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
-import socket from "../../lib/socket"; // make sure this points to socket client
-import { v4 as uuid } from "uuid"; // for demo userId generation
+import { v4 as uuid } from "uuid"; // For demo userId generation
+import io from "socket.io-client"; // Correctly import the client-side socket.io
 
+// Fade animation
 const fadeUp = {
   hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0 },
@@ -19,10 +20,13 @@ export default function MatchesPage() {
     cashRequired: true,
   });
 
-  useEffect(() => {
-    const userId = uuid(); // For demo. Use real user ID in prod
+  // Initialize socket client
+  const socket = io(process.env.NEXT_PUBLIC_SERVER_URL); // Replace with your server URL
 
-    // Register the user
+  useEffect(() => {
+    const userId = uuid(); // For demo. Use real user ID in production
+
+    // Register the user with socket
     socket.emit("register", {
       userId,
       name: "User " + userId.slice(0, 4),
@@ -33,7 +37,7 @@ export default function MatchesPage() {
     // Request to find a match
     socket.emit("find_match", criteria);
 
-    // On receiving a match
+    // Handle match found event
     socket.on("match_found", ({ match }) => {
       toast.success(`🎯 Match found with ${match.name}`);
       setTimeout(() => {
@@ -41,12 +45,13 @@ export default function MatchesPage() {
       }, 2000); // wait before redirect
     });
 
+    // Clean up the socket listener when component is unmounted
     return () => {
       socket.off("match_found");
     };
   }, [criteria, router]);
 
-  // Fake matches list
+  // Fake matches list (to be replaced with dynamic data from the server)
   const mockList = [
     { name: "Ankit S.", distance: "300m away", status: "Available now" },
     { name: "Meena K.", distance: "500m away", status: "Available in 5 min" },

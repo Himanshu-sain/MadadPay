@@ -6,8 +6,10 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const { name, email, phone, password, passwordConfirm, location } = await req.json();
-
+    const body = await req.json(); // Get the full request body
+    // Log the entire body
+    const { name, email, phone, password, passwordConfirm, location } = body;
+    
     // 1) Check if passwords match
     if (password !== passwordConfirm) {
       return new Response(
@@ -31,17 +33,35 @@ export async function POST(req) {
       );
     }
 
-    // 3) Create new user
+    // 3) Validate if location coordinates exist and are correct
+    if (
+      !location ||
+      !location.coordinates ||
+      location.coordinates.length !== 2
+    ) {
+      return new Response(
+        JSON.stringify({
+          status: "fail",
+          message: "Invalid location coordinates",
+        }),
+        { status: 400 }
+      );
+    }
+
+    // 4) Create new user
     const newUser = await User.create({
       name,
       email,
       phone,
       password,
-      location,
+      location: {
+        type: "Point",
+        coordinates: location.coordinates, // Use the coordinates from the request
+      },
       isActive: true,
     });
 
-    // 4) Generate token and send response
+    // 5) Generate token and send response
     return createSendToken(newUser, 201);
   } catch (error) {
     console.error("Signup error:", error);
