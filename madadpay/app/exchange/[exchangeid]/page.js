@@ -1,96 +1,3 @@
-// "use client";
-// import React, { useEffect, useState } from "react";
-// import { useSearchParams } from "next/navigation";
-// import { motion } from "framer-motion";
-
-// const fadeUp = {
-//   hidden: { opacity: 0, y: 40 },
-//   visible: { opacity: 1, y: 0 },
-// };
-
-// const ExchangePage = () => {
-//   const searchParams = useSearchParams();
-//   const partnerName = searchParams.get("partner") || "Partner";
-//   const [amount, setAmount] = useState("");
-//   const [paymentMethod, setPaymentMethod] = useState("Cash");
-//   const [sessionActive, setSessionActive] = useState(false);
-
-//   useEffect(() => {
-//     // Auto-start session on mount
-//     setSessionActive(true);
-//   }, []);
-
-//   return (
-//     <motion.section
-//       className="p-6 max-w-xl mx-auto"
-//       initial="hidden"
-//       animate="visible"
-//       variants={fadeUp}
-//       transition={{ duration: 0.5 }}
-//     >
-//       <h1 className="text-3xl font-semibold mb-6 text-center">
-//         Exchange With {partnerName}
-//       </h1>
-
-//       <form className="space-y-4 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-//         <div>
-//           <label className="block mb-1 font-medium">Matched With</label>
-//           <input
-//             type="text"
-//             value={partnerName}
-//             readOnly
-//             className="w-full border p-2 rounded bg-gray-100 cursor-not-allowed"
-//           />
-//         </div>
-
-//         <div>
-//           <label className="block mb-1 font-medium">Enter Amount</label>
-//           <input
-//             type="number"
-//             value={amount}
-//             onChange={(e) => setAmount(e.target.value)}
-//             placeholder="e.g. 500"
-//             className="w-full border p-2 rounded"
-//           />
-//         </div>
-
-//         <div>
-//           <label className="block mb-1 font-medium">Payment Method</label>
-//           <select
-//             className="w-full border p-2 rounded"
-//             value={paymentMethod}
-//             onChange={(e) => setPaymentMethod(e.target.value)}
-//           >
-//             <option>Cash</option>
-//             <option>UPI</option>
-//             <option>Bank Transfer</option>
-//           </select>
-//         </div>
-
-//         <button
-//           type="submit"
-//           className="w-full bg-red-600 text-white py-3 rounded hover:bg-red-700 transition"
-//           onClick={(e) => {
-//             e.preventDefault();
-//             alert(
-//               `Request sent to ${partnerName} for ₹${amount} via ${paymentMethod}`
-//             );
-//           }}
-//         >
-//           Confirm Exchange
-//         </button>
-//       </form>
-
-//       {sessionActive && (
-//         <div className="mt-6 text-center text-green-600 font-semibold">
-//           ✅ Exchange session active
-//         </div>
-//       )}
-//     </motion.section>
-//   );
-// };
-
-// export default ExchangePage;
 
 
 // pages/exchange/[id].js
@@ -168,7 +75,9 @@ export default function ExchangePage() {
           <div className="flex items-center justify-between">
             <Link href="/">
               <span className="flex items-center cursor-pointer">
-                <span className="text-indigo-600 font-bold text-xl">CashConnect</span>
+                <span className="text-indigo-600 font-bold text-xl">
+                  CashConnect
+                </span>
               </span>
             </Link>
             <div className="flex items-center space-x-4">
@@ -208,12 +117,18 @@ export default function ExchangePage() {
           <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center mb-2">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor()}`}>
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor()}`}
+                >
                   {getStatusText()}
                 </span>
               </div>
-              <h1 className="text-xl font-bold text-gray-800">Exchange #{exchange.id}</h1>
-              <p className="text-sm text-gray-500">Created on {exchange.createdAt}</p>
+              <h1 className="text-xl font-bold text-gray-800">
+                Exchange #{exchange.id}
+              </h1>
+              <p className="text-sm text-gray-500">
+                Created on {exchange.createdAt}
+              </p>
             </div>
             <div className="flex space-x-2">
               <button className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
@@ -229,7 +144,9 @@ export default function ExchangePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Partner Info */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Exchange Partner</h2>
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
+              Exchange Partner
+            </h2>
             <div className="flex items-start">
               <div className="h-12 w-12 rounded-full bg-gray-200 mr-4 overflow-hidden">
                 <div className="w-full h-full bg-gray-300 flex items-center justify-center">
@@ -237,14 +154,20 @@ export default function ExchangePage() {
                 </div>
               </div>
               <div>
-                <h3 className="font-medium text-gray-800">{exchange.partner.name}</h3>
+                <h3 className="font-medium text-gray-800">
+                  {exchange.partner.name}
+                </h3>
                 <div className="flex items-center mt-1">
                   <div className="flex items-center text-yellow-400">
                     <i className="fas fa-star text-sm"></i>
-                    <span className="ml-1 text-sm text-gray-600">{exchange.partner.rating}</span>
+                    <span className="ml-1 text-sm text-gray-600">
+                      {exchange.partner.rating}
+                    </span>
                   </div>
                   <span className="mx-2 text-gray-300">|</span>
-                  <span className="text-sm text-gray-600">{exchange.partner.completedExchanges} exchanges</span>
+                  <span className="text-sm text-gray-600">
+                    {exchange.partner.completedExchanges} exchanges
+                  </span>
                 </div>
                 <button className="mt-3 px-3 py-1 text-sm text-indigo-600 border border-indigo-600 rounded-md hover:bg-indigo-50">
                   <i className="fas fa-comment-alt mr-1"></i> Message
@@ -255,31 +178,47 @@ export default function ExchangePage() {
 
           {/* Exchange Details */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Exchange Details</h2>
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
+              Exchange Details
+            </h2>
             <div className="space-y-4">
               <div>
                 <div className="text-sm text-gray-500">Exchange Type</div>
                 <div className="flex items-center mt-1">
-                  <i className={`fas ${exchange.type === 'cash' ? 'fa-money-bill-wave text-green-500' : 'fa-mobile-alt text-blue-500'} mr-2`}></i>
-                  <span className="font-medium">{exchange.type === 'cash' ? 'Cash Exchange' : 'Online Transfer'}</span>
+                  <i
+                    className={`fas ${
+                      exchange.type === "cash"
+                        ? "fa-money-bill-wave text-green-500"
+                        : "fa-mobile-alt text-blue-500"
+                    } mr-2`}
+                  ></i>
+                  <span className="font-medium">
+                    {exchange.type === "cash"
+                      ? "Cash Exchange"
+                      : "Online Transfer"}
+                  </span>
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-sm text-gray-500">Amount</div>
-                <div className="text-2xl font-bold text-gray-800 mt-1">₹{exchange.amount.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-gray-800 mt-1">
+                  ₹{exchange.amount.toLocaleString()}
+                </div>
               </div>
-              
+
               <div>
                 <div className="text-sm text-gray-500">Date & Time</div>
-                <div className="font-medium text-gray-800 mt-1">{exchange.date} at {exchange.time}</div>
+                <div className="font-medium text-gray-800 mt-1">
+                  {exchange.date} at {exchange.time}
+                </div>
               </div>
-              
+
               <div>
                 <div className="text-sm text-gray-500">Status</div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                  <div 
-                    className="bg-indigo-600 h-2.5 rounded-full" 
+                  <div
+                    className="bg-indigo-600 h-2.5 rounded-full"
                     style={{ width: `${getProgressPercentage()}%` }}
                   ></div>
                 </div>
@@ -295,9 +234,15 @@ export default function ExchangePage() {
 
           {/* Location Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Meeting Location</h2>
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
+              Meeting Location
+            </h2>
             <div className="bg-gray-100 rounded-lg h-40 mb-4 flex items-center justify-center">
-              <img src="/api/placeholder/400/160" alt="Map Location" className="w-full h-full object-cover rounded-lg" />
+              <img
+                src="/api/placeholder/400/160"
+                alt="Map Location"
+                className="w-full h-full object-cover rounded-lg"
+              />
             </div>
             <p className="text-gray-800 mb-3">{exchange.location.address}</p>
             <div className="flex space-x-2">
@@ -313,45 +258,59 @@ export default function ExchangePage() {
 
         {/* Safety Tips */}
         <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-          <h2 className="text-lg font-medium text-gray-800 mb-4">Safety Tips</h2>
+          <h2 className="text-lg font-medium text-gray-800 mb-4">
+            Safety Tips
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
                 <i className="fas fa-shield-alt"></i>
               </div>
               <div>
-                <h3 className="font-medium text-gray-800">Meet in Public Places</h3>
-                <p className="text-sm text-gray-600 mt-1">Always meet in well-lit, public areas with plenty of people around.</p>
+                <h3 className="font-medium text-gray-800">
+                  Meet in Public Places
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Always meet in well-lit, public areas with plenty of people
+                  around.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
                 <i className="fas fa-eye"></i>
               </div>
               <div>
                 <h3 className="font-medium text-gray-800">Check Currency</h3>
-                <p className="text-sm text-gray-600 mt-1">Carefully verify all cash before completing the exchange.</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Carefully verify all cash before completing the exchange.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
                 <i className="fas fa-user-friends"></i>
               </div>
               <div>
                 <h3 className="font-medium text-gray-800">Bring a Friend</h3>
-                <p className="text-sm text-gray-600 mt-1">Consider bringing someone with you for added security.</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Consider bringing someone with you for added security.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start">
               <div className="flex-shrink-0 h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 mr-3">
                 <i className="fas fa-phone"></i>
               </div>
               <div>
                 <h3 className="font-medium text-gray-800">Stay Connected</h3>
-                <p className="text-sm text-gray-600 mt-1">Let someone know where you're going and when you expect to return.</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  Let someone know where you&apos;re going and when you expect
+                  to return.
+                </p>
               </div>
             </div>
           </div>
@@ -362,7 +321,7 @@ export default function ExchangePage() {
           <button className="px-6 py-3 border border-red-600 text-red-600 font-medium rounded-md hover:bg-red-50">
             Cancel Exchange
           </button>
-          
+
           <div className="space-x-3">
             <button className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-md hover:bg-gray-50">
               Reschedule
@@ -373,7 +332,6 @@ export default function ExchangePage() {
           </div>
         </div>
       </main>
-
     </div>
   );
 }
