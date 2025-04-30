@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
@@ -13,9 +13,32 @@ export default function SignupForm() {
     passwordConfirm: "",
     location: "",
   });
+
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+
+  // Get user's geolocation and store it
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          setFormData((prev) => ({
+            ...prev,
+            location: mapsUrl, // ✅ Just a string URL
+          }));
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      console.warn("Geolocation not supported");
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -31,49 +54,24 @@ export default function SignupForm() {
     setIsLoading(true);
 
     try {
-      // Step 1: Validate phone
+      // Validate phone number
       const phonePattern = /^[0-9]{10}$/;
       if (!phonePattern.test(formData.phone)) {
         throw new Error("Phone number must be exactly 10 digits.");
       }
 
-      // Step 2: Geocode location
-      const geoResponse = await axios.get(
-        "https://nominatim.openstreetmap.org/search",
-        {
-          params: {
-            format: "json",
-            q: formData.location,
-          },
-          responseType: "json",
-        }
-      );
+      // Validate passwords match
+      if (formData.password !== formData.passwordConfirm) {
+        throw new Error("Passwords do not match.");
+      }
 
-      const geoData = geoResponse.data;
-      if (!geoData[0]) throw new Error("Invalid location.");
+      // ✅ Log the data before sending
+      console.log("Submitting signup form with data:", formData);
 
-      const coordinates = [
-        parseFloat(geoData[0].lon),
-        parseFloat(geoData[0].lat),
-      ];
- 
-      // Step 3: Format location and submit
-      const response = await axios.post(
-        "/api/auth/signup",
-        {
-          ...formData,
-          location: {
-            type: "Point",
-            coordinates: coordinates,
-          },
-        },
-        {
-          headers: {
-            "Content-Type": "application/json", // Ensure headers are correct
-          },
-        }
-      );
-
+      // Submit to API
+      const response = await axios.post("/api/auth/signup", formData, {
+        headers: { "Content-Type": "application/json" },
+      });
 
       router.push("/login");
     } catch (err) {
@@ -102,12 +100,10 @@ export default function SignupForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Form fields same as before */}
           {[
             { id: "name", type: "text", placeholder: "John Doe" },
             { id: "email", type: "email", placeholder: "your@email.com" },
             { id: "phone", type: "tel", placeholder: "9876543210" },
-            { id: "location", type: "text", placeholder: "City, Country" },
             { id: "password", type: "password", placeholder: "••••••••" },
             {
               id: "passwordConfirm",
@@ -161,22 +157,17 @@ export default function SignupForm() {
           </p>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <div className="text-center text-sm text-gray-600">
-            <p>
-              By signing up, you agree to our{" "}
-              <Link href="/terms" className="text-blue-600 hover:text-blue-800">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/privacy"
-                className="text-blue-600 hover:text-blue-800"
-              >
-                Privacy Policy
-              </Link>
-            </p>
-          </div>
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
+          <p>
+            By signing up, you agree to our{" "}
+            <Link href="/terms" className="text-blue-600 hover:text-blue-800">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-blue-600 hover:text-blue-800">
+              Privacy Policy
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -7,9 +7,10 @@ export async function POST(req) {
 
   try {
     const body = await req.json(); // Get the full request body
-    // Log the entire body
     const { name, email, phone, password, passwordConfirm, location } = body;
-    
+
+    // Debugging location
+
     // 1) Check if passwords match
     if (password !== passwordConfirm) {
       return new Response(
@@ -34,15 +35,31 @@ export async function POST(req) {
     }
 
     // 3) Validate if location coordinates exist and are correct
-    if (
-      !location ||
-      !location.coordinates ||
-      location.coordinates.length !== 2
-    ) {
+    if (!location || typeof location !== "string") {
       return new Response(
         JSON.stringify({
           status: "fail",
-          message: "Invalid location coordinates",
+          message: "Location is required and must be a string",
+        }),
+        { status: 400 }
+      );
+    }
+
+    console.log("Location received:", location); // To inspect the location
+
+    // Trim the location and check for valid URL
+    const trimmedLocation = location.trim();
+
+    const isValidLocation =
+      trimmedLocation.startsWith("https://www.google.com/maps?q=") ||
+      trimmedLocation.startsWith("https://www.google.com/maps/@");
+
+    if (!isValidLocation) {
+      console.log("Validation failed with location:", trimmedLocation);
+      return new Response(
+        JSON.stringify({
+          status: "fail",
+          message: "Invalid location URL format",
         }),
         { status: 400 }
       );
@@ -54,10 +71,7 @@ export async function POST(req) {
       email,
       phone,
       password,
-      location: {
-        type: "Point",
-        coordinates: location.coordinates, // Use the coordinates from the request
-      },
+      location,
       isActive: true,
     });
 

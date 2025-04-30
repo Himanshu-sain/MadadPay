@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import crypto from "crypto"; // Ensure to import crypto for password reset
 
 const userSchema = new mongoose.Schema(
   {
@@ -58,38 +59,23 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
-    // Location Handling
+    // Location Handling - Direct Google Maps URL
     location: {
-      type: {
-        type: String,
-        default: "Point",
-        enum: ["Point"],
-      },
-      coordinates: {
-        type: [Number], // [longitude, latitude]
-        required: true,
-        validate: {
-          validator: function (v) {
-            return (
-              v.length === 2 &&
-              v[0] >= -180 &&
-              v[0] <= 180 &&
-              v[1] >= -90 &&
-              v[1] <= 90
-            );
-          },
-          message: (props) => `${props.value} is not a valid coordinate pair!`,
-        },
-      },
-       // Geospatial index
+      type: String, // Now stores the direct Google Maps URL
+      required: true,
     },
-    lastKnownLocation: {
-      type: {
-        type: String,
-        default: "Point",
-      },
-      coordinates: [Number],
-    },
+
+    // lastKnownLocation: {
+    //   type: {
+    //     type: String,
+    //     enum: ["Point"],
+    //     default: "Point",
+    //   },
+    //   coordinates: {
+    //     type: [Number],
+    //     required: false, // 👈 this is the missing part!
+    //   },
+    // },
     address: {
       street: String,
       city: String,
@@ -163,14 +149,6 @@ userSchema.methods.createPasswordResetToken = function () {
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
   return resetToken;
 };
-
-// Geospatial index
-userSchema.index({ location: "2dsphere" });
-
-// Virtual for full address
-userSchema.virtual("fullAddress").get(function () {
-  return `${this.address.street}, ${this.address.city}, ${this.address.state} ${this.address.zipCode}, ${this.address.country}`;
-});
 
 // Update timestamp on save
 userSchema.pre("save", function (next) {
