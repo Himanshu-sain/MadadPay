@@ -65,17 +65,18 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // lastKnownLocation: {
-    //   type: {
-    //     type: String,
-    //     enum: ["Point"],
-    //     default: "Point",
-    //   },
-    //   coordinates: {
-    //     type: [Number],
-    //     required: false, // 👈 this is the missing part!
-    //   },
-    // },
+    // Add this to your userSchema
+    lastKnownLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        required: true,
+      },
+      coordinates: {
+        type: [Number],
+        required: true,
+      },
+    },
     address: {
       street: String,
       city: String,

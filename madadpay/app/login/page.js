@@ -1,16 +1,29 @@
-// components/LoginForm.jsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import axios from "axios";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/redux/slices/userSlice";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const router = useRouter();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    // This useEffect will only run on the client side
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        router.push("/"); // Redirect to home page if token exists
+      }
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +33,13 @@ export default function LoginForm() {
     try {
       const { data } = await axios.post("/api/auth/login", { email, password });
 
-      // Login success
+      // Store user in Redux
+      dispatch(setUser(data.data.user));
+
+      // Optionally store token (for protected routes)
+      localStorage.setItem("token", data.token);
+
+      // Redirect to home
       router.push("/");
     } catch (err) {
       if (err.response?.data?.message) {

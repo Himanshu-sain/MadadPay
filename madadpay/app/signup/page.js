@@ -19,26 +19,26 @@ export default function SignupForm() {
   const router = useRouter();
 
   // Get user's geolocation and store it
-  useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-          setFormData((prev) => ({
-            ...prev,
-            location: mapsUrl, // ✅ Just a string URL
-          }));
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      console.warn("Geolocation not supported");
-    }
-  }, []);
+ useEffect(() => {
+   if ("geolocation" in navigator) {
+     navigator.geolocation.getCurrentPosition(
+       (position) => {
+         const { latitude, longitude } = position.coords;
+         const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+         console.log("Fetched location:", mapsUrl); // Yeh line daal ke dekh, location aa rahi hai ya nahi
+         setFormData((prev) => ({
+           ...prev,
+           location: mapsUrl, // URL save kar rahe ho
+         }));
+       },
+       (error) => {
+         console.error("Geolocation error:", error);
+       },
+       { enableHighAccuracy: true, timeout: 10000 }
+     );
+   }
+ }, []);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -137,7 +137,7 @@ export default function SignupForm() {
           <div className="mt-6">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !formData.location} // Jab tak location nahi hai, button disabled rahega
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               {isLoading ? "Creating Account..." : "Sign Up"}

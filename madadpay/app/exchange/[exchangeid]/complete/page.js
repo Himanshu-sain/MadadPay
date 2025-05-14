@@ -67,40 +67,7 @@ export default function CompleteExchange() {
         <meta name="description" content="Complete your P2P cash exchange" />
       </Head>
 
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/">
-              <span className="flex items-center cursor-pointer">
-                <span className="text-indigo-600 font-bold text-xl">
-                  CashConnect
-                </span>
-              </span>
-            </Link>
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
-                <span className="text-gray-600 hover:text-indigo-600 cursor-pointer">
-                  <i className="fas fa-tachometer-alt mr-1"></i> Dashboard
-                </span>
-              </Link>
-              <Link href="/messages">
-                <span className="text-gray-600 hover:text-indigo-600 cursor-pointer">
-                  <i className="fas fa-envelope mr-1"></i> Messages
-                </span>
-              </Link>
-              <div className="relative">
-                <button className="flex items-center text-gray-600 focus:outline-none">
-                  <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-sm font-medium">RK</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
+     
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Back Button */}

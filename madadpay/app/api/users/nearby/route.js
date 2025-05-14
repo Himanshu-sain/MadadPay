@@ -1,63 +1,54 @@
 import User from "@/models/User";
+import connectDB from "@/lib/db";
 
-export async function GET(req) {
+export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ message: "Method not allowed" });
+  }
+
   try {
-    const { searchParams } = new URL(req.url);
-    const lat = parseFloat(searchParams.get("lat"));
-    const lng = parseFloat(searchParams.get("lng"));
-    const radius = parseFloat(searchParams.get("radius")) || 5000; // meters
-
-    if (!lat || !lng) {
-      return new Response(
-        JSON.stringify({ error: "Latitude and longitude required" }),
-        { status: 400 }
-      );
-    }
+    await connectDB();
+    const { lat, lng, maxDistance = 5 } = req.query;
 
     const users = await User.find({
-      isActive: true,
-      location: {
+      lastKnownLocation: {
         $near: {
           $geometry: {
             type: "Point",
-            coordinates: [lng, lat], // MongoDB uses [longitude, latitude]
+            coordinates: [parseFloat(lng), parseFloat(lat)],
           },
-          $maxDistance: radius,
+          $maxDistance: parseFloat(maxDistance) * 1000, // Convert km to meters
         },
       },
     }).select("-password");
 
-    // Add distance calculation
-    const usersWithDistance = users.map((user) => {
-      const distance = calculateDistance(
-        lat,
-        lng,
-        user.location.coordinates[1],
-        user.location.coordinates[0]
-      );
-      return { ...user.toObject(), distance };
-    });
+    // Add distance to each user
+    const usersWithDistance = users.map((user) => ({
+      ...user._doc,
+      distance: calculateDistance(
+        parseFloat(lat),
+        parseFloat(lng),
+        user.lastKnownLocation.coordinates[1],
+        user.lastKnownLocation.coordinates[0]
+      ),
+    }));
 
-    return new Response(JSON.stringify(usersWithDistance), { status: 200 });
+    res.status(200).json(usersWithDistance);
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-    });
+    res.status(500).json({ message: "Failed to fetch nearby users" });
   }
 }
 
-// Haversine formula for distance calculation
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Earth radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distance in km
-  return distance.toFixed(2); // Round to 2 decimal places
+  return R * c; // Distance in km
 }

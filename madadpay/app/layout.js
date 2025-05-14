@@ -3,7 +3,10 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ToasterProvider from "@/components/toaster";
-import { AuthProvider } from "@/lib/authContext";
+import { Provider } from "react-redux";
+import store from "@/redux/store";
+import ProtectedWrapper from "@/components/ProtectedWrapper";
+import Providers from "./Provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,13 +29,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ToasterProvider />
-        <AuthProvider>
-          <Navbar />
-          <div className="h-16" />
-          {children}
-          <Footer />
-        </AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
