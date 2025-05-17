@@ -45,7 +45,7 @@ export const createSendToken = (user, statusCode) => {
 export const protect = async (req) => {
   let token;
   const authHeader = req.headers.get("authorization");
-  console.log("authHeader:", authHeader); 
+  
 
   if (authHeader && authHeader.startsWith("Bearer")) {
     token = authHeader.split(" ")[1];

@@ -65,7 +65,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Add this to your userSchema
+    //Add this to your userSchema
     lastKnownLocation: {
       type: {
         type: String,
@@ -162,6 +162,8 @@ userSchema.pre(/^find/, function (next) {
   this.find({ isActive: { $ne: false } });
   next();
 });
+
+userSchema.index({ lastKnownLocation: "2dsphere" });
 
 const User = mongoose.models.User || mongoose.model("User", userSchema);
 export default User;

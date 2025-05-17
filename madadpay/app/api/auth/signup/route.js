@@ -6,12 +6,9 @@ export async function POST(req) {
   await connectDB();
 
   try {
-    const body = await req.json(); // Get the full request body
+    const body = await req.json();
     const { name, email, phone, password, passwordConfirm, location } = body;
 
-    // Debugging location
-
-    // 1) Check if passwords match
     if (password !== passwordConfirm) {
       return new Response(
         JSON.stringify({
@@ -22,7 +19,6 @@ export async function POST(req) {
       );
     }
 
-    // 2) Check if user exists
     const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
     if (existingUser) {
       return new Response(
@@ -34,7 +30,6 @@ export async function POST(req) {
       );
     }
 
-    // 3) Validate if location coordinates exist and are correct
     if (!location || typeof location !== "string") {
       return new Response(
         JSON.stringify({
@@ -45,9 +40,6 @@ export async function POST(req) {
       );
     }
 
-    console.log("Location received:", location); // To inspect the location
-
-    // Trim the location and check for valid URL
     const trimmedLocation = location.trim();
 
     const isValidLocation =
@@ -55,17 +47,42 @@ export async function POST(req) {
       trimmedLocation.startsWith("https://www.google.com/maps/@");
 
     if (!isValidLocation) {
-      console.log("Validation failed with location:", trimmedLocation);
       return new Response(
         JSON.stringify({
           status: "fail",
-          message: "Invalid location URL format",
+          message: "Invalid Google Maps location URL format",
         }),
         { status: 400 }
       );
     }
 
-    // 4) Create new user
+    // Extract coordinates from URL
+    let lat, lng;
+
+    if (trimmedLocation.includes("maps?q=")) {
+      const match = trimmedLocation.match(/maps\?q=([-.\d]+),([-.\d]+)/);
+      if (match) {
+        lat = parseFloat(match[1]);
+        lng = parseFloat(match[2]);
+      }
+    } else if (trimmedLocation.includes("maps/@")) {
+      const match = trimmedLocation.match(/maps\/@([-.\d]+),([-.\d]+)/);
+      if (match) {
+        lat = parseFloat(match[1]);
+        lng = parseFloat(match[2]);
+      }
+    }
+
+    if (!lat || !lng) {
+      return new Response(
+        JSON.stringify({
+          status: "fail",
+          message: "Could not extract coordinates from URL",
+        }),
+        { status: 400 }
+      );
+    }
+
     const newUser = await User.create({
       name,
       email,
@@ -73,9 +90,12 @@ export async function POST(req) {
       password,
       location,
       isActive: true,
+      lastKnownLocation: {
+        type: "Point",
+        coordinates: [lng, lat],
+      },
     });
 
-    // 5) Generate token and send response
     return createSendToken(newUser, 201);
   } catch (error) {
     console.error("Signup error:", error);

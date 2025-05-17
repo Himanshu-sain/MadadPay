@@ -1,112 +1,135 @@
 "use client";
-
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { MapPin, Grid, Map as MapIcon, Star, Sliders } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import { useSelector } from "react-redux";
+import { GoogleMap, Marker, useJsApiLoader } from "@react-google-maps/api";
 
-const LeafletMap = dynamic(() => import("@/components/leaflet"), {
-  ssr: false,
-});
+function getLatLngFromLocationUrl(locationUrl) {
+  try {
+    const url = new URL(locationUrl);
+    const q = url.searchParams.get("q");
+    if (!q) return null;
+    const [latStr, lngStr] = q.split(",");
+    const lat = parseFloat(latStr);
+    const lng = parseFloat(lngStr);
+    if (isNaN(lat) || isNaN(lng)) return null;
+    return { lat, lng };
+  } catch (e) {
+    return null;
+  }
+}
+
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 export default function SearchPage() {
   const [viewMode, setViewMode] = useState("grid");
   const [filters, setFilters] = useState({
-    minAmount: 500,
-    maxAmount: 5000,
-    maxDistance: 5,
-    minRating: 4,
+    minAmount: 0,
+    maxAmount: 100000,
+    maxDistance: 10,
+    minRating: 0,
   });
   const [sortBy, setSortBy] = useState("distance");
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [users, setUsers] = useState([]);
-  const [currentLocation, setCurrentLocation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch current user location
+  const userLocation = useSelector((state) => state.user.user.location);
+
+  const parsedLocation = useMemo(() => {
+    if (!userLocation) return null;
+    return getLatLngFromLocationUrl(userLocation);
+  }, [userLocation]);
+
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          setCurrentLocation({ lat: latitude, lng: longitude });
-
-          // Update user location in MongoDB
-          try {
-            const token = localStorage.getItem("token");
-
-            await fetch("/api/users/update-location", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                coordinates: [longitude, latitude],
-              }),
-            });
-          } catch (error) {
-            console.error("Failed to update location:", error);
-          }
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          setLoading(false);
-        }
-      );
-    }
-  }, []);
-
-  // Fetch nearby users from MongoDB
-  useEffect(() => {
-    if (!currentLocation) return;
+    if (!parsedLocation) return;
 
     const fetchNearbyUsers = async () => {
       try {
-        const response = await fetch(
-          `/api/users/nearby?lat=${currentLocation.lat}&lng=${currentLocation.lng}&maxDistance=${filters.maxDistance}`
-        );
+        setLoading(true);
+        const params = new URLSearchParams({
+          lat: parsedLocation.lat,
+          lng: parsedLocation.lng,
+          maxDistance: filters.maxDistance,
+        });
 
-        // Check if the response is successful (status 200-299)
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Check if the response body is empty
-        const text = await response.text();
-        const data = text ? JSON.parse(text) : []; // Parse JSON only if not empty
-
+        const response = await fetch(`/api/users/nearby?${params}`);
+        if (!response.ok) throw new Error("Failed to fetch users");
+        const data = await response.json();
         setUsers(data);
-      } catch (error) {
-        console.error("Failed to fetch users:", error);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
     fetchNearbyUsers();
-  }, [currentLocation, filters.maxDistance]);
+  }, [parsedLocation, filters.maxDistance]);
 
   const filteredUsers = useMemo(() => {
+    if (!parsedLocation) return [];
+
     return users
+      .map((user) => {
+        const userLatLng = getLatLngFromLocationUrl(user.location);
+        if (!userLatLng) return null;
+
+        const distance = getDistanceFromLatLonInKm(
+          parsedLocation.lat,
+          parsedLocation.lng,
+          userLatLng.lat,
+          userLatLng.lng
+        );
+
+        return {
+          ...user,
+          distance,
+        };
+      })
       .filter(
         (user) =>
-          user.amount >= filters.minAmount &&
-          user.amount <= filters.maxAmount &&
-          user.rating >= filters.minRating
+          user &&
+          (user.amount ?? 0) >= filters.minAmount &&
+          (user.amount ?? 0) <= filters.maxAmount &&
+          (user.rating ?? 0) >= filters.minRating &&
+          user.distance <= filters.maxDistance
       )
       .sort((a, b) => {
         if (sortBy === "distance") return a.distance - b.distance;
-        if (sortBy === "rating") return b.rating - a.rating;
-        if (sortBy === "amount") return b.amount - a.amount;
+        if (sortBy === "rating") return (b.rating ?? 0) - (a.rating ?? 0);
+        if (sortBy === "amount") return (b.amount ?? 0) - (a.amount ?? 0);
         return 0;
       });
-  }, [users, filters, sortBy]);
+  }, [users, filters, sortBy, parsedLocation]);
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
   };
+
+  const { isLoaded } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  });
+
+  if (loading) return <div className="p-4">Loading users...</div>;
+  if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -116,6 +139,7 @@ export default function SearchPage() {
           <button
             onClick={() => setFilterPanelOpen(!filterPanelOpen)}
             className="p-2 rounded-md border hover:bg-gray-100"
+            aria-label="Toggle Filters"
           >
             <Sliders size={20} />
           </button>
@@ -125,6 +149,7 @@ export default function SearchPage() {
                 viewMode === "grid" ? "bg-blue-500 text-white" : "bg-white"
               }`}
               onClick={() => setViewMode("grid")}
+              aria-label="Grid View"
             >
               <Grid size={20} />
             </button>
@@ -133,6 +158,7 @@ export default function SearchPage() {
                 viewMode === "map" ? "bg-blue-500 text-white" : "bg-white"
               }`}
               onClick={() => setViewMode("map")}
+              aria-label="Map View"
             >
               <MapIcon size={20} />
             </button>
@@ -142,33 +168,34 @@ export default function SearchPage() {
 
       <div className="flex gap-4">
         {filterPanelOpen && (
-          <div className="w-64 border rounded-lg p-4 self-start sticky top-4">
+          <aside className="w-64 border rounded-lg p-4 self-start sticky top-4">
             <h2 className="font-semibold text-lg mb-4">Filters</h2>
             <div className="mb-4">
               <label className="block text-sm mb-1">Amount Range</label>
-              <div className="flex items-center gap-2">
+              <div className="flex gap-2">
                 <input
                   type="number"
+                  min={0}
                   value={filters.minAmount}
                   onChange={(e) =>
                     handleFilterChange("minAmount", Number(e.target.value))
                   }
                   className="w-full border rounded p-2 text-sm"
-                  placeholder="Min"
+                  aria-label="Minimum Amount"
                 />
                 <span>-</span>
                 <input
                   type="number"
+                  min={0}
                   value={filters.maxAmount}
                   onChange={(e) =>
                     handleFilterChange("maxAmount", Number(e.target.value))
                   }
                   className="w-full border rounded p-2 text-sm"
-                  placeholder="Max"
+                  aria-label="Maximum Amount"
                 />
               </div>
             </div>
-
             <div className="mb-4">
               <label className="block text-sm mb-1">
                 Max Distance: {filters.maxDistance} km
@@ -183,16 +210,16 @@ export default function SearchPage() {
                   handleFilterChange("maxDistance", Number(e.target.value))
                 }
                 className="w-full"
+                aria-label="Maximum Distance"
               />
             </div>
-
             <div className="mb-6">
               <label className="block text-sm mb-1">
                 Min Rating: {filters.minRating}
               </label>
               <input
                 type="range"
-                min="1"
+                min="0"
                 max="5"
                 step="0.1"
                 value={filters.minRating}
@@ -200,94 +227,84 @@ export default function SearchPage() {
                   handleFilterChange("minRating", Number(e.target.value))
                 }
                 className="w-full"
+                aria-label="Minimum Rating"
               />
             </div>
-
             <div className="mb-4">
               <label className="block text-sm mb-2">Sort By</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full border rounded p-2"
+                aria-label="Sort By"
               >
                 <option value="distance">Distance</option>
                 <option value="rating">Rating</option>
                 <option value="amount">Amount</option>
               </select>
             </div>
-
-            <button className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
-              Apply Filters
-            </button>
-          </div>
+          </aside>
         )}
 
-        <div className="flex-1">
+        <main className="flex-1">
           {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {loading ? (
-                <div>Loading...</div>
-              ) : (
-                filteredUsers.map((user) => (
-                  <Link href={`/profile/${user.id}`} key={user.id}>
-                    <div className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer">
-                      <div className="flex gap-3">
-                        <div className="relative w-16 h-16">
-                          <Image
-                            src={user.profileImage}
-                            alt={user.name}
-                            className="rounded-full object-cover"
-                            fill
-                          />
-                          {user.verified && (
-                            <div className="absolute -bottom-1 -right-1 bg-blue-500 rounded-full p-1">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3 text-white"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{user.name}</h3>
-                          <div className="flex items-center text-sm text-gray-600 mt-1">
-                            <Star
-                              size={14}
-                              className="text-yellow-500 mr-1"
-                              fill="currentColor"
-                            />
-                            <span>{user.rating}</span>
-                          </div>
-                        </div>
+            filteredUsers.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredUsers.map((user) => (
+                  <Link
+                    href={`/profile/${user._id}`}
+                    key={user._id}
+                    className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer block"
+                  >
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center text-xl font-semibold text-blue-700">
+                        {user.name[0].toUpperCase()}
                       </div>
-                      <div className="flex justify-between mt-4 text-sm">
-                        <div className="flex items-center">
-                          <MapPin size={14} className="mr-1 text-gray-500" />
-                          <span>{user.distance} km</span>
-                        </div>
-                        <div className="font-medium">
-                          ₹{user.amount.toLocaleString()}
-                        </div>
+                      <div>
+                        <h3 className="font-semibold text-lg">{user.name}</h3>
+                        <p className="text-sm text-gray-500">{user.phone}</p>
                       </div>
                     </div>
+                    <div className="text-sm mb-1">
+                      <strong>Amount:</strong> ₹{user.amount ?? "N/A"}
+                    </div>
+                    <div className="text-sm mb-1 flex items-center gap-1">
+                      <Star size={14} className="text-yellow-500" />
+                      {user.rating ?? "N/A"}
+                    </div>
+                    <div className="text-sm text-gray-600 flex items-center gap-1">
+                      <MapPin size={14} />
+                      {user.distance?.toFixed(2)} km away
+                    </div>
                   </Link>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p>No users found with these filters.</p>
+            )
+          ) : isLoaded ? (
+            <GoogleMap
+              mapContainerStyle={{ width: "100%", height: "600px" }}
+              center={parsedLocation}
+              zoom={13}
+            >
+              {filteredUsers.map((user) => {
+                const userLatLng = getLatLngFromLocationUrl(user.location);
+                if (!userLatLng) return null;
+
+                return (
+                  <Marker
+                    key={user._id}
+                    position={userLatLng}
+                    title={`${user.name} - ₹${user.amount ?? "N/A"}`}
+                  />
+                );
+              })}
+            </GoogleMap>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <LeafletMap users={filteredUsers} center={currentLocation} />
-            </div>
+            <p>Loading map...</p>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
 import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
-// Fix default marker icons
+// Marker icon fix for Next.js + Webpack
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -19,28 +19,28 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow.src,
 });
 
-// Custom icon for destination pins
+// Custom icon for nearby users
 const customIcon = new L.Icon({
   iconUrl:
     "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png",
   iconSize: [30, 42],
 });
 
-// Routing component
+// Routing component to draw line between two locations
 function Routing({ from, to }) {
   const map = useMap();
-  const routingControlRef = useRef(null);
+  const routingRef = useRef(null);
 
   useEffect(() => {
     if (!from || !to) return;
 
-    if (routingControlRef.current) {
-      routingControlRef.current.setWaypoints([
+    if (routingRef.current) {
+      routingRef.current.setWaypoints([
         L.latLng(from.lat, from.lng),
         L.latLng(to.lat, to.lng),
       ]);
     } else {
-      routingControlRef.current = L.Routing.control({
+      routingRef.current = L.Routing.control({
         waypoints: [L.latLng(from.lat, from.lng), L.latLng(to.lat, to.lng)],
         routeWhileDragging: false,
         addWaypoints: false,
@@ -50,9 +50,9 @@ function Routing({ from, to }) {
     }
 
     return () => {
-      if (routingControlRef.current) {
-        map.removeControl(routingControlRef.current);
-        routingControlRef.current = null;
+      if (routingRef.current) {
+        map.removeControl(routingRef.current);
+        routingRef.current = null;
       }
     };
   }, [from, to, map]);
@@ -60,11 +60,11 @@ function Routing({ from, to }) {
   return null;
 }
 
+// Main Map Component
 export default function LeafletMap({ users, center }) {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [destination, setDestination] = useState(null);
 
-  // ✅ Improvement: Reuse `center` prop as current location if available
   useEffect(() => {
     if (center) {
       setCurrentLocation(center);
@@ -81,14 +81,15 @@ export default function LeafletMap({ users, center }) {
         },
         (err) => {
           console.warn("Geolocation error:", err.message);
-          alert("Location permission denied. Enable it to get directions.");
+          alert("Location permission denied.");
         }
       );
     }
   }, [center]);
 
-  // ❗Bug: Component may render without a valid `center` prop, causing crash
-  if (!center) return <div className="text-center p-4">Loading map...</div>;
+  if (typeof window === "undefined" || !center) {
+    return <div className="text-center p-4">Loading map...</div>;
+  }
 
   return (
     <div className="relative">
@@ -103,7 +104,6 @@ export default function LeafletMap({ users, center }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* ✅ Improvement: Only map valid locations */}
         {users
           .filter((u) => u.lastKnownLocation?.coordinates?.length === 2)
           .map((user) => (
@@ -125,7 +125,7 @@ export default function LeafletMap({ users, center }) {
               <Popup>
                 <strong>{user.name}</strong>
                 <br />
-                Distance: {user.distance.toFixed(2)} km
+                Distance: {user.distance?.toFixed(2) ?? "?"} km
                 <br />
                 Amount: ₹{user.amount}
               </Popup>
